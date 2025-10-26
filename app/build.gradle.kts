@@ -44,7 +44,6 @@ android {
 }
 
 dependencies {
-    implementation(project(":lib_analytics"))
     implementation(project(":profile-parsers"))
     implementation(project(":profile_manager"))
     implementation(project(":profile"))

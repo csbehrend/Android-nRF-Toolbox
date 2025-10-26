@@ -33,8 +33,6 @@ internal fun TitleAppBar(text: String) {
             .union(WindowInsets.statusBars)
             .union(WindowInsets.navigationBars)
             .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top),
-        actions = {
-            AnalyticsPermissionButton()
-        }
+        actions = { }
     )
 }

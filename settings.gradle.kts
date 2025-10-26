@@ -53,7 +53,6 @@ dependencyResolutionManagement {
 rootProject.name = "Android nRF Toolbox"
 
 include(":app")
-include(":lib_analytics")
 include(":profile-parsers")
 include(":lib_service")
 include(":lib_storage")

@@ -13,9 +13,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import no.nordicsemi.android.analytics.AppAnalytics
-import no.nordicsemi.android.analytics.Link
-import no.nordicsemi.android.analytics.ProfileOpenEvent
 import no.nordicsemi.android.common.logger.LoggerLauncher
 import no.nordicsemi.android.common.navigation.Navigator
 import no.nordicsemi.android.common.navigation.viewmodel.SimpleNavigationViewModel
@@ -39,7 +36,6 @@ internal class ProfileViewModel @Inject constructor(
     private val channelSoundingManager: Provider<ChannelSoundingManager>,
     private val navigator: Navigator,
     private val deviceRepository: DeviceRepository,
-    private val analytics: AppAnalytics,
     @param:ApplicationContext private val context: Context,
     savedStateHandle: SavedStateHandle,
 ) : SimpleNavigationViewModel(navigator, savedStateHandle) {
@@ -173,7 +169,6 @@ internal class ProfileViewModel @Inject constructor(
     }
 
     private fun openLogger() {
-        analytics.logEvent(ProfileOpenEvent(Link.LOGGER))
         LoggerLauncher.launch(context, logger.session as? LogSession)
     }
 

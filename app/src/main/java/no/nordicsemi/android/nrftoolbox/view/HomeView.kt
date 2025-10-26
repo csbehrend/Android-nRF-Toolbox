@@ -350,9 +350,6 @@ internal fun HomeView() {
                     NoConnectedDeviceView()
                 }
             }
-            item {
-                Links { onEvent(it) }
-            }
         }
     }
 }

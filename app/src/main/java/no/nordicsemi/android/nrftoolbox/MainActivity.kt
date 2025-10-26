@@ -58,8 +58,6 @@ class MainActivity : NordicActivity() {
                 ) {
                     NavigationView(HomeDestinations + ScannerDestination + ProfileDestination)
                 }
-
-                AnalyticsPermissionRequestDialog()
             }
         }
     }

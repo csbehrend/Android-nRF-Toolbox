@@ -4,8 +4,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
-import no.nordicsemi.android.analytics.AppAnalytics
-import no.nordicsemi.android.analytics.ProfileConnectedEvent
 import no.nordicsemi.android.service.profile.ServiceApi
 import no.nordicsemi.android.toolbox.profile.manager.ServiceManager
 import no.nordicsemi.android.toolbox.lib.utils.Profile
@@ -14,9 +12,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class DeviceRepository @Inject constructor(
-    private val analytics: AppAnalytics,
-) {
+class DeviceRepository @Inject constructor() {
     private val _connectedDevices =
         MutableStateFlow<Map<String, ServiceApi.DeviceData>>(emptyMap())
     val connectedDevices = _connectedDevices.asStateFlow()
@@ -46,7 +42,6 @@ class DeviceRepository @Inject constructor(
      */
     fun updateAnalytics(address: String, profile: Profile) {
         if (!_loggedProfiles.any { it.first == address && it.second == profile.toString() }) {
-            analytics.logEvent(ProfileConnectedEvent(profile))
             _loggedProfiles.add(address to profile.toString())
         }
     }

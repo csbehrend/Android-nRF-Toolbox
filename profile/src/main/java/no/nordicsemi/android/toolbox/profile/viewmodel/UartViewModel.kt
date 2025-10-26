@@ -12,11 +12,6 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import no.nordicsemi.android.analytics.AppAnalytics
-import no.nordicsemi.android.analytics.UARTChangeConfiguration
-import no.nordicsemi.android.analytics.UARTCreateConfiguration
-import no.nordicsemi.android.analytics.UARTMode
-import no.nordicsemi.android.analytics.UARTSendAnalyticsEvent
 import no.nordicsemi.android.common.navigation.Navigator
 import no.nordicsemi.android.common.navigation.viewmodel.SimpleNavigationViewModel
 import no.nordicsemi.android.toolbox.lib.utils.Profile
@@ -75,7 +70,6 @@ internal sealed interface UARTEvent {
 @HiltViewModel
 internal class UartViewModel @Inject constructor(
     private val uartConfigurationRepository: UartConfigurationRepository,
-    private val analytics: AppAnalytics,
     private val deviceRepository: DeviceRepository,
     navigator: Navigator,
     savedStateHandle: SavedStateHandle,
@@ -216,8 +210,6 @@ internal class UartViewModel @Inject constructor(
      */
     private fun runMacro(macro: UARTMacro) = viewModelScope.launch {
         UartRepository.runMacro(address, macro)
-        // Log the event in the analytics.
-        analytics.logEvent(UARTSendAnalyticsEvent(UARTMode.PRESET))
     }
 
     /**
@@ -235,8 +227,6 @@ internal class UartViewModel @Inject constructor(
 
         // Save the configuration name in the data store.
         uartConfigurationRepository.saveLastConfigurationNameToDataSource(name)
-        // Log the event in the analytics.
-        analytics.logEvent(UARTCreateConfiguration())
     }
 
     /**
@@ -247,8 +237,6 @@ internal class UartViewModel @Inject constructor(
         UartRepository.updateSelectedConfigurationName(address, configuration.name)
         // Update the selected configuration in the datastore.
         uartConfigurationRepository.saveLastConfigurationNameToDataSource(configuration.name)
-        // Log the event in the analytics.
-        analytics.logEvent(UARTChangeConfiguration())
     }
 
     /**
@@ -270,7 +258,5 @@ internal class UartViewModel @Inject constructor(
      */
     private fun sendText(text: String, newLineChar: MacroEol) = viewModelScope.launch {
         UartRepository.sendText(address, text, newLineChar)
-        // Log the event in the analytics.
-        analytics.logEvent(UARTSendAnalyticsEvent(UARTMode.TEXT))
     }
 }
