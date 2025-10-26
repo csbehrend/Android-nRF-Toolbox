@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+<string name="ots_features">OTS Features</string>
+
+<string name="oacp_create">Create</string>
+<string name="oacp_delete">Delete</string>
+<string name="oacp_checksum">Checksum</string>
+<string name="oacp_execute">Execute</string>
+<string name="oacp_read">Read</string>
+<string name="oacp_write">Write</string>
+<string name="oacp_append">Append</string>
+<string name="oacp_truncate">Truncate</string>
+<string name="oacp_patch">Patch</string>
+<string name="oacp_abort">Abort</string>
+
+<string name="olcp_goto">Goto</string>
+<string name="olcp_order">Order</string>
+<string name="olcp_reqObjCount">ReqObjCount</string>
+<string name="olcp_clearMarking">ClearMarking</string>
+</resources>

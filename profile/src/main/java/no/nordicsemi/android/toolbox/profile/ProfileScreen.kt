@@ -43,6 +43,7 @@ import no.nordicsemi.android.toolbox.profile.view.hrs.HRSScreen
 import no.nordicsemi.android.toolbox.profile.view.hts.HTSScreen
 import no.nordicsemi.android.toolbox.profile.view.internal.ProfileAppBar
 import no.nordicsemi.android.toolbox.profile.view.lbs.BlinkyScreen
+import no.nordicsemi.android.toolbox.profile.view.ots.OTSScreen
 import no.nordicsemi.android.toolbox.profile.view.rscs.RSCSScreen
 import no.nordicsemi.android.toolbox.profile.view.throughput.ThroughputScreen
 import no.nordicsemi.android.toolbox.profile.view.uart.UARTScreen
@@ -213,6 +214,7 @@ internal fun DeviceConnectedView(
                         Profile.THROUGHPUT -> ThroughputScreen(state.maxValueLength)
                         Profile.UART -> UARTScreen(state.maxValueLength)
                         Profile.DFU -> DFUScreen { onEvent(ConnectionEvent.DisconnectEvent) }
+                        Profile.OTS -> OTSScreen()
                     }
                 }
             }

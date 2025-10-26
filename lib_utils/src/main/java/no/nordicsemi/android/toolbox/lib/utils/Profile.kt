@@ -16,7 +16,8 @@ enum class Profile {
     //    PRX, TODO: PRX is not implemented yet, it will be added in the future.
     BATTERY,
     THROUGHPUT,
-    UART;
+    UART,
+    OTS;
 
     override fun toString(): String =
         when (this) {
@@ -34,6 +35,7 @@ enum class Profile {
             THROUGHPUT -> "Throughput Service"
             UART -> "UART Service"
             DFU -> "Device Firmware Update"
+            OTS -> "Object Transfer Service"
         }
 
 }

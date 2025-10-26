@@ -336,6 +336,24 @@ internal fun HomeView() {
                                                     )
                                                 }
 
+                                                Profile.OTS -> {
+                                                    FeatureButton(
+                                                        iconId = R.drawable.ic_dfu,
+                                                        description = R.string.dfu_module_full,
+                                                        deviceName = peripheral.name,
+                                                        deviceAddress = peripheral.address,
+                                                        profileNames = services.map { it.profile.toString() },
+                                                        onClick = {
+                                                            onEvent(
+                                                                UiEvent.OnDeviceClick(
+                                                                    peripheral.address,
+                                                                    serviceManager.profile
+                                                                )
+                                                            )
+                                                        },
+                                                    )
+                                                }
+
                                                 Profile.BATTERY -> {
                                                     // Battery service is handled above, do nothing here.
                                                 }
