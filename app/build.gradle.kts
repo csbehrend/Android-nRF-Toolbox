@@ -41,6 +41,13 @@ if (getGradle().startParameter.taskRequests.toString().contains("Release")) {
 
 android {
     namespace = "no.nordicsemi.android.nrftoolbox"
+    defaultConfig {
+        targetSdk = 36
+        minSdk = 29
+    }
+    compileSdk {
+        version = release(36)
+    }
 }
 
 dependencies {

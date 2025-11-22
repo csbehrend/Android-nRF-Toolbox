@@ -66,6 +66,6 @@ include(":profile_manager")
 //    includeBuild("../Android-Common-Libraries")
 //}
 //
-//if (file("../Kotlin-BLE-Library").exists()) {
-//    includeBuild("../Kotlin-BLE-Library")
-//}
+if (file("../Kotlin-BLE-Library").exists()) {
+    includeBuild("../Kotlin-BLE-Library")
+}
