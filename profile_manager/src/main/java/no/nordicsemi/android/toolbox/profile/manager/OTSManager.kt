@@ -94,12 +94,23 @@ internal class OTSManager : ServiceManager {
         private var peripheral: Peripheral<*, *>? = null
 
          fun openTransferChannel(deviceId: String) {
-            val o = peripheral?.createCocChannel(OTS_COC_PSM)
-            o?.let {
-                Timber.d("Opened OTS transfer channel")
+            val pair = peripheral?.openCocChannel(OTS_COC_PSM)
+            pair?.second?.let {
+                Timber.i("Opened OTS transfer channel")
                 it.write(0xdd)
-                return
+                val test = (0..<256 * 3).toByteArray()
+                //val test = (0..<489).toByteArray()
+                it.write(test)
+            }
+            pair?.first?.let {
+                Timber.i("Reading OTS content")
+                val msg = it.readNBytes(512 * 2)
+                Timber.d(msg.toList().map { num -> num.toInt() }.joinToString(" "))
             }
         }
     }
+}
+
+fun IntRange.toByteArray(): ByteArray {
+    return this.map { it.toByte() }.toByteArray()
 }
