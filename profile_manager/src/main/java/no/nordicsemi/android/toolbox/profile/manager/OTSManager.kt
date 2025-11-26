@@ -9,8 +9,11 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.withContext
 import no.nordicsemi.android.toolbox.lib.utils.Profile
 import no.nordicsemi.android.toolbox.profile.manager.repository.BatteryRepository
+import no.nordicsemi.android.toolbox.profile.manager.repository.CSCRepository
 import no.nordicsemi.android.toolbox.profile.manager.repository.DFSRepository
+import no.nordicsemi.android.toolbox.profile.manager.repository.LBSRepository
 import no.nordicsemi.android.toolbox.profile.manager.repository.OTSRepository
+import no.nordicsemi.android.toolbox.profile.parser.csc.CSCDataParser
 import no.nordicsemi.android.toolbox.profile.parser.directionFinder.ddf.DDFDataParser
 import no.nordicsemi.android.toolbox.profile.parser.directionFinder.distance.DistanceMode
 import no.nordicsemi.android.toolbox.profile.parser.gls.data.RequestStatus
@@ -25,21 +28,26 @@ import java.util.UUID
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
+import no.nordicsemi.android.toolbox.profile.parser.ots.OLCPOperation
+import no.nordicsemi.kotlin.ble.core.util.fromShortUuid
 
-private val FEATURES_CHARACTERISTIC_UUID: UUID =
-    UUID.fromString("00002abd-0000-1000-8000-00805f9b34fb")
-private val OBJECT_NAME_CHARACTERISTIC_UUID: UUID =
-    UUID.fromString("00002abe-0000-1000-8000-00805f9b34fb")
-private val OBJECT_TYPE_CHARACTERISTIC_UUID: UUID =
-    UUID.fromString("00002abf-0000-1000-8000-00805f9b34fb")
-private val OBJECT_SIZE_CHARACTERISTIC_UUID: UUID =
-    UUID.fromString("00002ac0-0000-1000-8000-00805f9b34fb")
-private val OBJECT_ID_CHARACTERISTIC_UUID: UUID =
-    UUID.fromString("00002ac3-0000-1000-8000-00805f9b34fb")
-private val OBJECT_PROPERTIES_CHARACTERISTIC_UUID: UUID =
-    UUID.fromString("00002ac4-0000-1000-8000-00805f9b34fb")
+@OptIn(ExperimentalUuidApi::class)
+private val FEATURES_CHARACTERISTIC_UUID = Uuid.fromShortUuid(0x2abd)
+@OptIn(ExperimentalUuidApi::class)
+private val OBJECT_NAME_CHARACTERISTIC_UUID = Uuid.fromShortUuid(0x2abe)
+@OptIn(ExperimentalUuidApi::class)
+private val OBJECT_TYPE_CHARACTERISTIC_UUID = Uuid.fromShortUuid(0x2abf)
+@OptIn(ExperimentalUuidApi::class)
+private val OBJECT_SIZE_CHARACTERISTIC_UUID = Uuid.fromShortUuid(0x2ac0)
+@OptIn(ExperimentalUuidApi::class)
+private val OBJECT_ID_CHARACTERISTIC_UUID = Uuid.fromShortUuid(0x2ac3)
+@OptIn(ExperimentalUuidApi::class)
+private val OBJECT_PROPERTIES_CHARACTERISTIC_UUID = Uuid.fromShortUuid(0x2ac4)
 
-private val OTS_COC_PSM: Int = 0x0025
+@OptIn(ExperimentalUuidApi::class)
+private val OLCP_CHARACTERISTIC_UUID = Uuid.fromShortUuid(0x2AC6)
+
+private const val OTS_COC_PSM: Int = 0x0025
 
 internal class OTSManager : ServiceManager {
     override val profile: Profile = Profile.OTS
@@ -52,46 +60,66 @@ internal class OTSManager : ServiceManager {
     ) {
         withContext(scope.coroutineContext) {
             peripheral = remoteService.owner
-            featureCharacteristic = remoteService.characteristics.firstOrNull {
-                it.uuid == FEATURES_CHARACTERISTIC_UUID.toKotlinUuid()
+            featureChar = remoteService.characteristics.firstOrNull {
+                it.uuid == FEATURES_CHARACTERISTIC_UUID
             } ?: throw IllegalStateException("OTS Feature characteristic not found")
-            /*
-            if (featureChar.properties.contains(CharacteristicProperty.READ))
-
-            val objNameChar = remoteService.characteristics.firstOrNull {
-                it.uuid == OBJECT_NAME_CHARACTERISTIC_UUID.toKotlinUuid()
+            objectNameChar = remoteService.characteristics.firstOrNull {
+                it.uuid == OBJECT_NAME_CHARACTERISTIC_UUID
             } ?: throw IllegalStateException("OTS Object Name characteristic not found")
+            objectTypeChar = remoteService.characteristics.firstOrNull {
+                it.uuid == OBJECT_TYPE_CHARACTERISTIC_UUID
+            } ?: throw IllegalStateException("OTS Object Type characteristic not found")
+            objectSizeChar = remoteService.characteristics.firstOrNull {
+                it.uuid == OBJECT_SIZE_CHARACTERISTIC_UUID
+            } ?: throw IllegalStateException("OTS Object Size characteristic not found")
+            olcpChar = remoteService.characteristics.firstOrNull {
+                it.uuid == OLCP_CHARACTERISTIC_UUID
+            } ?: throw IllegalStateException("OTS OLCP characteristic not found")
 
-            val objNameChar = remoteService.characteristics.firstOrNull {
-                it.uuid == OBJECT_NAME_CHARACTERISTIC_UUID.toKotlinUuid()
-            } ?: throw IllegalStateException("OTS Object Name characteristic not found")
-             */
-
-            featureCharacteristic.let { characteristic ->
+            objectNameChar.let { characteristic ->
                 // If the characteristic supports READ, read the initial value
                 if (characteristic.properties.contains(CharacteristicProperty.READ)) {
                     try {
                         characteristic.read()
-                            .let {
-                                OTSDataParser.parseFeatures(it)
-                            }
-                            ?.let { otsFeatures ->
-                                OTSRepository.updateFeatures(deviceId, otsFeatures)
-                            }
-
+                            .let { OTSDataParser.parseObjectName(it) }
+                            .let { OTSRepository.updateObjectName(deviceId, it) }
                     } catch (e: Exception) {
-                        Timber.e("Error reading OTS Features: ${e.message}")
+                        Timber.e("Error reading OTS Object name: ${e.message}")
                     }
                 }
             }
+
+            olcpChar.subscribe().mapNotNull {
+                    OTSDataParser.parseOlcpResponse(it)
+                }.onEach {
+                    OTSRepository.onOLCPResponse(deviceId, it)
+                    refreshObjectName(deviceId)
+                }.catch { it.printStackTrace() }
+                .onCompletion { OTSRepository.clear(deviceId) }
+                .launchIn(scope)
+            olcpChar.subscribe()
+                .mapNotNull { ButtonStateParser.parse(it) }
+                .onEach { LBSRepository.updateButtonState(deviceId, it) }
+                .catch {
+                    Timber.e("Error observing button state: ${it.message}")
+                }
+                .onCompletion {
+                    LBSRepository.clear(deviceId)
+                }.launchIn(scope)
 
             openTransferChannel(deviceId)
         }
     }
 
     companion object {
-        private lateinit var featureCharacteristic: RemoteCharacteristic
+        private lateinit var featureChar: RemoteCharacteristic
+        private lateinit var objectNameChar: RemoteCharacteristic
+        private lateinit var objectTypeChar: RemoteCharacteristic
+        private lateinit var objectSizeChar: RemoteCharacteristic
+        private lateinit var olcpChar: RemoteCharacteristic
         private var peripheral: Peripheral<*, *>? = null
+
+        // private val _otsOp
 
          fun openTransferChannel(deviceId: String) {
             val pair = peripheral?.openCocChannel(OTS_COC_PSM)
@@ -105,7 +133,36 @@ internal class OTSManager : ServiceManager {
             pair?.first?.let {
                 Timber.i("Reading OTS content")
                 val msg = it.readNBytes(512 * 2)
+                Timber.d("Message size from ESP32: " + msg.size.toString())
                 Timber.d(msg.toList().map { num -> num.toInt() }.joinToString(" "))
+            }
+            Timber.d(OTSDataParser.parseOlcpResponse(byteArrayOf(0x01, 0x01)).toString())
+        }
+
+        suspend fun refreshObjectName(deviceId: String) {
+            featureChar.let { characteristic ->
+                // If the characteristic supports READ, read the initial value
+                if (characteristic.properties.contains(CharacteristicProperty.READ)) {
+                    try {
+                        characteristic.read()
+                            .let { OTSDataParser.parseFeatures(it) }
+                            ?.let { OTSRepository.updateFeatures(deviceId, it) }
+                    } catch (e: Exception) {
+                        Timber.e("Error reading OTS Features: ${e.message}")
+                    }
+                }
+            }
+        }
+
+        suspend fun requestOLCPOperation(deviceId: String, operation: OLCPOperation) {
+            val data = operation.genPacket()
+
+            try {
+                if (::olcpChar.isInitialized) {
+                    olcpChar.write(data, WriteType.WITH_RESPONSE)
+                }
+            } catch (e: Exception) {
+                Timber.e("Error writing to OLCP characteristic: ${e.message}")
             }
         }
     }

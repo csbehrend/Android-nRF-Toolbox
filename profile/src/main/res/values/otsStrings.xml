@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 <string name="ots_features">OTS Features</string>
+<string name="ots_object">OTS Object Info</string>
+<string name="olcp_status">OLCP Status</string>
 
 <string name="oacp_create">Create</string>
 <string name="oacp_delete">Delete</string>

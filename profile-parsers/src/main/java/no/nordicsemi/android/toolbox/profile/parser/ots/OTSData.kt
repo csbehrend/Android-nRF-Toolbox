@@ -1,7 +1,38 @@
 package no.nordicsemi.android.toolbox.profile.parser.ots
 
+import no.nordicsemi.android.toolbox.profile.parser.ots.OACPResult
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
+import java.util.UUID
+
+/*
+sealed class OACPFeatures(
+    val index: Int,
+) {
+    data object Create : OACPFeatures(0)
+    data object Delete : OACPFeatures(1)
+    data object Checksum: OACPFeatures(2)
+    data object Execute: OACPFeatures(3)
+    data object Read: OACPFeatures(4)
+    data object Write: OACPFeatures(5)
+    data object Append: OACPFeatures(6)
+    data object Truncate: OACPFeatures(7)
+    data object Catch: OACPFeatures(8)
+    data object Abort: OACPFeatures(9)
+
+    fun fromInt(field: Int): List<OACPFeatures> {
+        val features = mutableListOf<OACPFeatures>()
+        for (feature in OACPFeatures::class.sealedSubclasses) {
+        }
+
+    }
+    companion object {
+        private val map = entries
+
+        val entries: List<OACPFeatures> by lazy {
+    }
+}
+*/
 
 data class OACPFeatures (
     val create: Boolean = false,
@@ -24,6 +55,7 @@ data class OLCPFeatures (
 )
 
 data class OTSFeatures (
+    // val oacp: List<OACPFeatures> = emptyList(),
     val oacp: OACPFeatures = OACPFeatures(),
     val olcp: OLCPFeatures = OLCPFeatures(),
 )
@@ -43,12 +75,11 @@ data class OTSObjSize (
     val allocated: Int,
 )
 
-@OptIn(ExperimentalUuidApi::class)
 data class OTSObject (
     val name: String? = null,
-    val type: Uuid? = null,
+    val type: UUID? = null,
     val size: OTSObjSize? = null,
-    val id: Uuid? = null,
+    val id: UUID? = null,
     val properties: OTSObjProperties? = null,
 )
 
@@ -62,34 +93,42 @@ enum class OACPOpcode(val op: Int){
     RESPONSE(0x60)
 }
 
-enum class OACPResult(val op: Int){
-    SUCCESS(0x01),
-    UNSUPPORTED_OPCODE(0x02),
-    INVALID_PARAMETER(0x03),
-    INSUFFICIENT_RESOURCES(0x04),
-    INVALID_OBJECT(0x05),
-    CHANNEL_UNAVAILBLE(0x06),
-    UNSUPPORTED_TYPE(0x07),
-    PROCEDURE_NOT_PERMITTED(0x08),
-    OBJECT_LOCKED(0x09),
-    OPERATION_FAILED(0x0A)
+sealed class OACPResult {
+    data object Success : OACPResult()
+    data object UnsupportedOpcode : OACPResult()
+    data object InvalidParameter : OACPResult()
+    data object InsufficientResources : OACPResult()
+    data object InvalidObject : OACPResult()
+    data object ChannelUnavailable : OACPResult()
+    data object UnsupportedType : OACPResult()
+    data object ProcedureNotPermitted : OACPResult()
+    data object ObjectLocked : OACPResult()
+    data object OperationFailed : OACPResult()
+
+    companion object {
+        fun toInt(): Int {
+            return when (this) {
+                Success -> 0x01
+                UnsupportedOpcode -> 0x02
+                InvalidParameter -> 0x03
+                InsufficientResources -> 0x04
+                InvalidObject -> 0x05
+                ChannelUnavailable -> 0x06
+                UnsupportedType -> 0x07
+                ProcedureNotPermitted -> 0x08
+                ObjectLocked -> 0x09
+                OperationFailed -> 0x0A
+                else -> throw IllegalArgumentException("Unknown OACPResult")
+            }
+        }
+    }
 }
 
-enum class OLCPOpcode(val op: Int){
-    FIRST(0x01),
-    LAST(0x02),
-    PREVIOUS(0x03),
-    NEXT(0x04),
-    CODE(0x70),
-}
-
-enum class OLCPResult(val op: Int) {
-    SUCCESS(0x01),
-    UNSUPPORTED_OPCODE(0x02),
-    INVALID_PARAMETER(0x03),
-    OPERATION_FAILED(0x04),
-    OUT_OF_BOUNDS(0x05),
-    TOO_MANY_OBJECTS(0x06),
-    NO_OBJECT(0x07),
-    OBJECT_ID_NOT_FOUND(0x08),
+data class OLCPResponse (
+    val request: OLCPOperation? = null,
+    val result: OLCPResult? = null,
+) {
+    override fun toString(): String {
+        return "Request = $request, Result = $result"
+    }
 }

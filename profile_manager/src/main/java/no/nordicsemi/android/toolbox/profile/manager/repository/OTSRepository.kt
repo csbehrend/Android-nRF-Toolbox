@@ -6,6 +6,9 @@ import kotlinx.coroutines.flow.update
 import no.nordicsemi.android.toolbox.profile.parser.ots.OTSFeatures
 import no.nordicsemi.android.toolbox.profile.parser.ots.OTSObject
 import no.nordicsemi.android.toolbox.profile.data.OTSServiceData
+import no.nordicsemi.android.toolbox.profile.manager.OTSManager
+import no.nordicsemi.android.toolbox.profile.parser.ots.OLCPOperation
+import no.nordicsemi.android.toolbox.profile.parser.ots.OLCPResponse
 
 object OTSRepository {
     private val _dataMap = mutableMapOf<String, MutableStateFlow<OTSServiceData>>()
@@ -18,8 +21,20 @@ object OTSRepository {
         _dataMap[deviceId]?.update { it.copy(otsFeatures = features) }
     }
 
+    fun updateObjectName(deviceId: String, name: String) {
+        _dataMap[deviceId]?.update { it.copy(otsObject = it.otsObject.copy(name = name)) }
+    }
+
     fun updateObject(deviceId: String, obj: OTSObject) {
         _dataMap[deviceId]?.update { it.copy(otsObject = obj) }
+    }
+
+    suspend fun requestOLCPOperation(deviceId: String, operation: OLCPOperation) {
+        OTSManager.requestOLCPOperation(deviceId, operation)
+    }
+
+    fun onOLCPResponse(deviceId: String, response: OLCPResponse) {
+        _dataMap[deviceId]?.update { it.copy(olcpResponse = response) }
     }
 
     fun clear(deviceId: String) {

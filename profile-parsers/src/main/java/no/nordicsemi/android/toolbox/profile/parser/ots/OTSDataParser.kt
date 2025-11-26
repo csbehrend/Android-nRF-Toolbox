@@ -37,4 +37,15 @@ object OTSDataParser {
 
         return OTSFeatures(oacp, olcp)
     }
+
+    fun parseOlcpResponse(data: ByteArray): OLCPResponse {
+        assert (data.size == 2)
+        val request = OLCPOperation.fromByte(data[0])
+        val result = OLCPResult.fromByte(data[1])
+        return OLCPResponse(request, result)
+    }
+
+    fun parseObjectName(data: ByteArray): String {
+        return data.decodeToString()
+    }
 }
