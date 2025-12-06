@@ -4,6 +4,9 @@ plugins {
 
 android {
     namespace = "no.nordicsemi.android.toolbox.profile.data"
+    defaultConfig {
+        minSdk = 33
+    }
 }
 
 dependencies {

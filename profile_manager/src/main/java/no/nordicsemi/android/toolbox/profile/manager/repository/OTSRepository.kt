@@ -9,6 +9,7 @@ import no.nordicsemi.android.toolbox.profile.data.OTSServiceData
 import no.nordicsemi.android.toolbox.profile.manager.OTSManager
 import no.nordicsemi.android.toolbox.profile.parser.ots.OLCPOperation
 import no.nordicsemi.android.toolbox.profile.parser.ots.OLCPResponse
+import no.nordicsemi.android.toolbox.profile.parser.ots.OTSObjSize
 
 object OTSRepository {
     private val _dataMap = mutableMapOf<String, MutableStateFlow<OTSServiceData>>()
@@ -23,6 +24,10 @@ object OTSRepository {
 
     fun updateObjectName(deviceId: String, name: String) {
         _dataMap[deviceId]?.update { it.copy(otsObject = it.otsObject.copy(name = name)) }
+    }
+
+    fun updateObjectSize(deviceId: String, size: OTSObjSize) {
+        _dataMap[deviceId]?.update { it.copy(otsObject = it.otsObject.copy(size = size)) }
     }
 
     fun updateObject(deviceId: String, obj: OTSObject) {

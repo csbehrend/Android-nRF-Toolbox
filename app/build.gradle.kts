@@ -43,7 +43,7 @@ android {
     namespace = "no.nordicsemi.android.nrftoolbox"
     defaultConfig {
         targetSdk = 36
-        minSdk = 29
+        minSdk = 33
     }
     compileSdk {
         version = release(36)

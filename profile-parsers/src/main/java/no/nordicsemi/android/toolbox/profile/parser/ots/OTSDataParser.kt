@@ -48,4 +48,17 @@ object OTSDataParser {
     fun parseObjectName(data: ByteArray): String {
         return data.decodeToString()
     }
+
+    fun parseObjectSize(data: ByteArray, byteOrder:ByteOrder = ByteOrder.LITTLE_ENDIAN): OTSObjSize? {
+        val fieldLen = IntFormat.UINT32.length
+        if (data.size != 2 * fieldLen) return null
+        return try {
+            OTSObjSize(
+                data.getInt(0, IntFormat.UINT32, byteOrder),
+                data.getInt(fieldLen, IntFormat.UINT32, byteOrder),
+            )
+        } catch (e: IllegalArgumentException) {
+            null
+        }
+    }
 }

@@ -36,6 +36,9 @@ plugins {
 
 android {
     namespace = "no.nordicsemi.android.ui"
+    defaultConfig {
+        minSdk = 33
+    }
 }
 
 dependencies {

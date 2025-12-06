@@ -72,6 +72,12 @@ sealed class OLCPResult(
     object NoObject : OLCPResult(0x07)
     object ObjectIdNotFound : OLCPResult(0x08)
 
+    override fun toString(): String {
+        val name = this::class.simpleName ?: "Unknown"
+        val codeHex = String.format("0x%02X", resultCode)
+        return "OLCPResult.$name ($codeHex)"
+    }
+
     companion object {
         private val map = OLCPResult::class.sealedSubclasses.associateBy { it.objectInstance?.resultCode }
         fun fromByte(op: Byte): OLCPResult {

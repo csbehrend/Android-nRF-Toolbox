@@ -6,6 +6,9 @@ plugins {
 
 android {
     namespace = "no.nordicsemi.android.toolbox.lib.storage"
+    defaultConfig {
+        minSdk = 33
+    }
 }
 
 dependencies {

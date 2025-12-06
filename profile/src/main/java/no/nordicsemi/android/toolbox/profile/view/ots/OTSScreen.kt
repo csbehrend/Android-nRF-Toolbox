@@ -49,7 +49,10 @@ internal fun OTSScreen() {
         )
         OLCPView(
             response = otsServiceData.olcpResponse,
-            onClickEvent = { onClickEvent(OTSEvent.OnOLCPRequest(OLCPOperation.Last)) }
+            firstClickEvent = { onClickEvent(OTSEvent.OnOLCPRequest(OLCPOperation.First)) },
+            lastClickEvent = { onClickEvent(OTSEvent.OnOLCPRequest(OLCPOperation.Last)) },
+            prevClickEvent = { onClickEvent(OTSEvent.OnOLCPRequest(OLCPOperation.Previous)) },
+            nextClickEvent = { onClickEvent(OTSEvent.OnOLCPRequest(OLCPOperation.Next)) },
         )
     }
 }
@@ -76,6 +79,13 @@ private fun OTSFeaturesView(
     if (oacp.truncate) oacpStr += " " + stringResource(R.string.oacp_truncate)
     if (oacp.patch) oacpStr += " " + stringResource(R.string.oacp_patch)
     if (oacp.abort) oacpStr += " " + stringResource(R.string.oacp_abort)
+
+    var olcpStr = "OLCP:"
+    val olcp = features.olcp
+    if (olcp.goto) olcpStr += " " + stringResource(R.string.olcp_goto)
+    if (olcp.order) olcpStr += " " + stringResource(R.string.olcp_order)
+    if (olcp.reqObjCount) olcpStr += " " + stringResource(R.string.olcp_reqObjCount)
+    if (olcp.clearMarking) olcpStr += " " + stringResource(R.string.olcp_clearMarking)
 
     val textColor = MaterialTheme.colorScheme.onSurface
     OutlinedCard {
@@ -107,6 +117,17 @@ private fun OTSFeaturesView(
             ) {
                 Text(
                     text = oacpStr,
+                    color = textColor,
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = olcpStr,
                     color = textColor,
                 )
             }
@@ -151,6 +172,17 @@ private fun OTSObjectView(
                     color = textColor,
                 )
             }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Current/Allocated Size: " + obj.size?.current + "/" + obj.size?.allocated,
+                    color = textColor,
+                )
+            }
         }
     }
 }
@@ -158,7 +190,10 @@ private fun OTSObjectView(
 @Composable
 private fun OLCPView(
     response: OLCPResponse,
-    onClickEvent: () -> Unit,
+    firstClickEvent: () -> Unit,
+    lastClickEvent: () -> Unit,
+    prevClickEvent: () -> Unit,
+    nextClickEvent: () -> Unit,
 ) {
     val textColor = MaterialTheme.colorScheme.onSurface
     OutlinedCard {
@@ -188,8 +223,17 @@ private fun OLCPView(
                     .padding(vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Button(onClick = onClickEvent) {
+                Button(onClick = firstClickEvent) {
                     Text(text = "First")
+                }
+                Button(onClick = lastClickEvent) {
+                    Text(text = "Last")
+                }
+                Button(onClick = prevClickEvent) {
+                    Text(text = "Previous")
+                }
+                Button(onClick = nextClickEvent) {
+                    Text(text = "Next")
                 }
             }
             Row(

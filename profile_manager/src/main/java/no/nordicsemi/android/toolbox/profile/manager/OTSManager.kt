@@ -2,6 +2,8 @@ package no.nordicsemi.android.toolbox.profile.manager
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onCompletion
@@ -29,6 +31,8 @@ import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 import kotlin.uuid.toKotlinUuid
 import no.nordicsemi.android.toolbox.profile.parser.ots.OLCPOperation
+import no.nordicsemi.android.toolbox.profile.parser.ots.OLCPResponse
+import no.nordicsemi.android.toolbox.profile.parser.ots.OLCPResult
 import no.nordicsemi.kotlin.ble.core.util.fromShortUuid
 
 @OptIn(ExperimentalUuidApi::class)
@@ -76,38 +80,25 @@ internal class OTSManager : ServiceManager {
                 it.uuid == OLCP_CHARACTERISTIC_UUID
             } ?: throw IllegalStateException("OTS OLCP characteristic not found")
 
-            objectNameChar.let { characteristic ->
-                // If the characteristic supports READ, read the initial value
-                if (characteristic.properties.contains(CharacteristicProperty.READ)) {
-                    try {
-                        characteristic.read()
-                            .let { OTSDataParser.parseObjectName(it) }
-                            .let { OTSRepository.updateObjectName(deviceId, it) }
-                    } catch (e: Exception) {
-                        Timber.e("Error reading OTS Object name: ${e.message}")
-                    }
-                }
-            }
+            refreshOtsFeatures(deviceId)
+            refreshObjectName(deviceId)
+            refreshObjectSize(deviceId)
 
-            olcpChar.subscribe().mapNotNull {
+            // olcpChar.subscribe().mapNotNull {
+                //  OTSDataParser.parseOlcpResponse(it)
+            // OTSRepository.onOLCPResponse(deviceId, it)
+            olcpChar.subscribe().mapNotNull{
                     OTSDataParser.parseOlcpResponse(it)
-                }.onEach {
-                    OTSRepository.onOLCPResponse(deviceId, it)
+                }.onEach { OTSRepository.onOLCPResponse(deviceId, it) }
+                .filter { it.result is OLCPResult.Success }
+                .onEach {
                     refreshObjectName(deviceId)
+                    refreshObjectSize(deviceId)
                 }.catch { it.printStackTrace() }
                 .onCompletion { OTSRepository.clear(deviceId) }
                 .launchIn(scope)
-            olcpChar.subscribe()
-                .mapNotNull { ButtonStateParser.parse(it) }
-                .onEach { LBSRepository.updateButtonState(deviceId, it) }
-                .catch {
-                    Timber.e("Error observing button state: ${it.message}")
-                }
-                .onCompletion {
-                    LBSRepository.clear(deviceId)
-                }.launchIn(scope)
 
-            openTransferChannel(deviceId)
+            // openTransferChannel(deviceId)
         }
     }
 
@@ -139,18 +130,37 @@ internal class OTSManager : ServiceManager {
             Timber.d(OTSDataParser.parseOlcpResponse(byteArrayOf(0x01, 0x01)).toString())
         }
 
-        suspend fun refreshObjectName(deviceId: String) {
-            featureChar.let { characteristic ->
+        private suspend fun readCharacteristic(deviceId: String, characteristic: RemoteCharacteristic, actions: (ByteArray) -> Unit) {
+            characteristic.let { c ->
                 // If the characteristic supports READ, read the initial value
-                if (characteristic.properties.contains(CharacteristicProperty.READ)) {
+                if (c.properties.contains(CharacteristicProperty.READ)) {
                     try {
-                        characteristic.read()
-                            .let { OTSDataParser.parseFeatures(it) }
-                            ?.let { OTSRepository.updateFeatures(deviceId, it) }
+                        actions(c.read())
                     } catch (e: Exception) {
-                        Timber.e("Error reading OTS Features: ${e.message}")
+                        Timber.e("Error reading OTS characteristic: ${e.message}")
                     }
                 }
+            }
+        }
+
+        suspend fun refreshOtsFeatures(deviceId: String) {
+            readCharacteristic(deviceId, featureChar) { data ->
+                data.let { OTSDataParser.parseFeatures(it) }
+                    ?.let { OTSRepository.updateFeatures(deviceId, it) }
+            }
+        }
+
+        suspend fun refreshObjectName(deviceId: String) {
+            readCharacteristic(deviceId, objectNameChar) { data ->
+                data.let { OTSDataParser.parseObjectName(it) }
+                .let { OTSRepository.updateObjectName(deviceId, it) }
+            }
+        }
+
+        suspend fun refreshObjectSize(deviceId: String) {
+            readCharacteristic(deviceId, objectSizeChar) { data ->
+                data.let { OTSDataParser.parseObjectSize(it) }
+                ?.let { OTSRepository.updateObjectSize(deviceId, it) }
             }
         }
 

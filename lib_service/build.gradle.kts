@@ -35,6 +35,9 @@ plugins {
 
 android {
     namespace = "no.nordicsemi.android.service"
+    defaultConfig {
+        minSdk = 33
+    }
 }
 
 dependencies {
