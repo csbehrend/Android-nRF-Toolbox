@@ -17,7 +17,8 @@ enum class Profile {
     BATTERY,
     THROUGHPUT,
     UART,
-    OTS;
+    OTS,
+    GCI;
 
     override fun toString(): String =
         when (this) {
@@ -36,6 +37,7 @@ enum class Profile {
             UART -> "UART Service"
             DFU -> "Device Firmware Update"
             OTS -> "Object Transfer Service"
+            GCI -> "Glove Control Interface"
         }
 
 }

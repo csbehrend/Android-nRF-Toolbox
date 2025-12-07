@@ -15,6 +15,7 @@ import no.nordicsemi.android.toolbox.lib.utils.spec.LBS_SERVICE_UUID
 import no.nordicsemi.android.toolbox.lib.utils.spec.LEGACY_DFU_SERVICE_UUID
 import no.nordicsemi.android.toolbox.lib.utils.spec.MDS_SERVICE_UUID
 import no.nordicsemi.android.toolbox.lib.utils.spec.OTS_SERVICE_UUID
+import no.nordicsemi.android.toolbox.lib.utils.spec.GCI_SERVICE_UUID
 import no.nordicsemi.android.toolbox.lib.utils.spec.RSCS_SERVICE_UUID
 import no.nordicsemi.android.toolbox.lib.utils.spec.SMP_SERVICE_UUID
 import no.nordicsemi.android.toolbox.lib.utils.spec.THROUGHPUT_SERVICE_UUID
@@ -48,6 +49,7 @@ object ServiceManagerFactory {
 
         // Add more service UUIDs to handler mappings as needed
         OTS_SERVICE_UUID to ::OTSManager,
+        GCI_SERVICE_UUID to ::GCIManager,
     ).mapKeys { it.key.toKotlinUuid() }
 
     fun createServiceManager(serviceUuid: Uuid): ServiceManager? {

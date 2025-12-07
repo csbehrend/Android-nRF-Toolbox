@@ -38,6 +38,7 @@ import no.nordicsemi.android.toolbox.profile.view.channelSounding.ChannelSoundin
 import no.nordicsemi.android.toolbox.profile.view.cscs.CSCScreen
 import no.nordicsemi.android.toolbox.profile.view.dfu.DFUScreen
 import no.nordicsemi.android.toolbox.profile.view.directionFinder.DFSScreen
+import no.nordicsemi.android.toolbox.profile.view.gci.GCIScreen
 import no.nordicsemi.android.toolbox.profile.view.gls.GLSScreen
 import no.nordicsemi.android.toolbox.profile.view.hrs.HRSScreen
 import no.nordicsemi.android.toolbox.profile.view.hts.HTSScreen
@@ -215,6 +216,7 @@ internal fun DeviceConnectedView(
                         Profile.UART -> UARTScreen(state.maxValueLength)
                         Profile.DFU -> DFUScreen { onEvent(ConnectionEvent.DisconnectEvent) }
                         Profile.OTS -> OTSScreen()
+                        Profile.GCI -> GCIScreen()
                     }
                 }
             }
