@@ -13,6 +13,7 @@ import no.nordicsemi.android.common.navigation.viewmodel.SimpleNavigationViewMod
 import no.nordicsemi.android.toolbox.lib.utils.Profile
 import no.nordicsemi.android.toolbox.lib.utils.Profile.OTS
 import no.nordicsemi.android.toolbox.profile.ProfileDestinationId
+import no.nordicsemi.android.toolbox.profile.data.GCIServiceData
 import no.nordicsemi.android.toolbox.profile.data.OTSServiceData
 import no.nordicsemi.android.toolbox.profile.manager.repository.GCIRepository
 import no.nordicsemi.android.toolbox.profile.manager.repository.OTSRepository
@@ -37,10 +38,8 @@ internal class GCIViewModel @Inject constructor(
 
     val address = parameterOf(ProfileDestinationId)
 
-    /*
-    private val _otsState = MutableStateFlow(OTSServiceData())
-    val otsState = _otsState.asStateFlow()
-     */
+    private val _gciState = MutableStateFlow(GCIServiceData())
+    val gciState = _gciState.asStateFlow()
 
     init {
         observeGCIProfile()
@@ -68,17 +67,14 @@ internal class GCIViewModel @Inject constructor(
      * Starts the OTS service and observes changes.
      */
     private fun startGCIService(address: String) {
-        // Start the OTS service and observe location changes
-        /*
-        OTSRepository.getData(address).onEach {
-            _otsState.value = _otsState.value.copy(
+        // Start the GCI service and observe location changes
+        GCIRepository.getData(address).onEach {
+            _gciState.value = _gciState.value.copy(
                 profile = it.profile,
-                otsFeatures = it.otsFeatures,
-                otsObject = it.otsObject,
-                olcpResponse = it.olcpResponse,
+                gciEvent = it.gciEvent,
+                repCount = it.repCount,
             )
         }.launchIn(viewModelScope)
-         */
     }
 
     fun onEvent(event: GCIEvent) {

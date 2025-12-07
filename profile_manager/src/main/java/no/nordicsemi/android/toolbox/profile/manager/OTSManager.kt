@@ -49,6 +49,8 @@ private val OBJECT_ID_CHARACTERISTIC_UUID = Uuid.fromShortUuid(0x2ac3)
 private val OBJECT_PROPERTIES_CHARACTERISTIC_UUID = Uuid.fromShortUuid(0x2ac4)
 
 @OptIn(ExperimentalUuidApi::class)
+private val OACP_CHARACTERISTIC_UUID = Uuid.fromShortUuid(0x2AC5)
+@OptIn(ExperimentalUuidApi::class)
 private val OLCP_CHARACTERISTIC_UUID = Uuid.fromShortUuid(0x2AC6)
 
 private const val OTS_COC_PSM: Int = 0x0025
@@ -76,6 +78,9 @@ internal class OTSManager : ServiceManager {
             objectSizeChar = remoteService.characteristics.firstOrNull {
                 it.uuid == OBJECT_SIZE_CHARACTERISTIC_UUID
             } ?: throw IllegalStateException("OTS Object Size characteristic not found")
+            oacpChar = remoteService.characteristics.firstOrNull {
+                it.uuid == OACP_CHARACTERISTIC_UUID
+            } ?: throw IllegalStateException("OTS OACP characteristic not found")
             olcpChar = remoteService.characteristics.firstOrNull {
                 it.uuid == OLCP_CHARACTERISTIC_UUID
             } ?: throw IllegalStateException("OTS OLCP characteristic not found")
@@ -107,6 +112,7 @@ internal class OTSManager : ServiceManager {
         private lateinit var objectNameChar: RemoteCharacteristic
         private lateinit var objectTypeChar: RemoteCharacteristic
         private lateinit var objectSizeChar: RemoteCharacteristic
+        private lateinit var oacpChar: RemoteCharacteristic
         private lateinit var olcpChar: RemoteCharacteristic
         private var peripheral: Peripheral<*, *>? = null
 

@@ -36,13 +36,15 @@ import no.nordicsemi.android.toolbox.profile.viewmodel.OTSViewModel
 @Composable
 internal fun GCIScreen() {
     val gciViewModel = hiltViewModel<GCIViewModel>()
-    // val otsServiceData by otsViewModel.otsState.collectAsStateWithLifecycle()
+    val gciServiceData by gciViewModel.gciState.collectAsStateWithLifecycle()
     val onClickEvent: (GCIEvent) -> Unit = { gciViewModel.onEvent(it) }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         GCIView(
+            eventName = gciServiceData.gciEvent::class.simpleName ?: "N/A",
+            repCount = gciServiceData.repCount,
             startClickEvent = { onClickEvent(GCIEvent.StartExercise(1)) },
         )
     }
@@ -50,6 +52,8 @@ internal fun GCIScreen() {
 
 @Composable
 private fun GCIView(
+    eventName: String,
+    repCount: Int,
     startClickEvent: () -> Unit,
 ) {
     val textColor = MaterialTheme.colorScheme.onSurface
@@ -83,6 +87,28 @@ private fun GCIView(
                 Button(onClick = startClickEvent) {
                     Text(text = "Start Exercise")
                 }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Last Event: $eventName",
+                    color = textColor,
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Rep Count: $repCount",
+                    color = textColor,
+                )
             }
         }
     }
