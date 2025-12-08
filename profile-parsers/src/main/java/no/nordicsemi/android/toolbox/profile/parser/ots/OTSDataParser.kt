@@ -38,6 +38,13 @@ object OTSDataParser {
         return OTSFeatures(oacp, olcp)
     }
 
+    fun parseOacpResponse(data: ByteArray): OACPResponse? {
+        assert (data.isNotEmpty())
+        val request = OACPOpcode.fromByte(data[0]) ?: return null
+        val result = OACPResult.fromByte(data[1]) ?: return null
+        return OACPResponse(request, result)
+    }
+
     fun parseOlcpResponse(data: ByteArray): OLCPResponse {
         assert (data.size == 2)
         val request = OLCPOperation.fromByte(data[0])

@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import no.nordicsemi.android.toolbox.profile.R
 import no.nordicsemi.android.toolbox.profile.manager.repository.OTSRepository
 import no.nordicsemi.android.toolbox.profile.parser.ots.OACPFeatures
+import no.nordicsemi.android.toolbox.profile.parser.ots.OACPResponse
 import no.nordicsemi.android.toolbox.profile.parser.ots.OLCPOperation
 import no.nordicsemi.android.toolbox.profile.parser.ots.OLCPResponse
 import no.nordicsemi.android.toolbox.profile.viewmodel.OTSViewModel
@@ -54,6 +55,7 @@ internal fun OTSScreen() {
             prevClickEvent = { onClickEvent(OTSEvent.OnOLCPRequest(OLCPOperation.Previous)) },
             nextClickEvent = { onClickEvent(OTSEvent.OnOLCPRequest(OLCPOperation.Next)) },
         )
+        OACPView(otsServiceData.oacpResponse, otsServiceData.readData) { onClickEvent(OTSEvent.ReadObject) }
     }
 }
 
@@ -244,6 +246,70 @@ private fun OLCPView(
             ) {
                 Text(
                     text = "Response: $response",
+                    color = textColor,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OACPView(
+    response: OACPResponse,
+    data: String,
+    readClickEvent: () -> Unit,
+) {
+    val textColor = MaterialTheme.colorScheme.onSurface
+    OutlinedCard {
+        Column(
+            modifier = Modifier
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Image(
+                    imageVector = Icons.Default.RadioButtonChecked,
+                    contentDescription = null,
+                    modifier = Modifier.padding(end = 16.dp),
+                    colorFilter = ColorFilter.tint(textColor)
+                )
+                Text(
+                    text = stringResource(id = R.string.oacp_status),
+                    style = MaterialTheme.typography.headlineMedium,
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Button(onClick = readClickEvent) {
+                    Text(text = "Read Object")
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Response: $response",
+                    color = textColor,
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Data: $data",
                     color = textColor,
                 )
             }

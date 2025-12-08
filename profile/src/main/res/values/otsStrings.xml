@@ -4,6 +4,7 @@
     <string name="ots_object">OTS Object Info</string>
     <string name="olcp_status">OLCP Status</string>
 
+    <string name="oacp_status">OACP Status</string>
     <string name="oacp_create">Create</string>
     <string name="oacp_delete">Delete</string>
     <string name="oacp_checksum">Checksum</string>

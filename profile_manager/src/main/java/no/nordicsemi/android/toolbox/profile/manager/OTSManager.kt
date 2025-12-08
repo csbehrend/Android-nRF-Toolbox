@@ -1,14 +1,24 @@
 package no.nordicsemi.android.toolbox.profile.manager
 
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterIsInstance
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.zip
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import no.nordicsemi.android.toolbox.lib.utils.Profile
 import no.nordicsemi.android.toolbox.profile.manager.repository.BatteryRepository
 import no.nordicsemi.android.toolbox.profile.manager.repository.CSCRepository
@@ -19,6 +29,9 @@ import no.nordicsemi.android.toolbox.profile.parser.csc.CSCDataParser
 import no.nordicsemi.android.toolbox.profile.parser.directionFinder.ddf.DDFDataParser
 import no.nordicsemi.android.toolbox.profile.parser.directionFinder.distance.DistanceMode
 import no.nordicsemi.android.toolbox.profile.parser.gls.data.RequestStatus
+import no.nordicsemi.android.toolbox.profile.parser.ots.OACPOperation
+import no.nordicsemi.android.toolbox.profile.parser.ots.OACPResponse
+import no.nordicsemi.android.toolbox.profile.parser.ots.OACPResult
 import no.nordicsemi.android.toolbox.profile.parser.ots.OTSDataParser
 import no.nordicsemi.kotlin.ble.client.RemoteCharacteristic
 import no.nordicsemi.kotlin.ble.client.RemoteService
@@ -33,6 +46,7 @@ import kotlin.uuid.toKotlinUuid
 import no.nordicsemi.android.toolbox.profile.parser.ots.OLCPOperation
 import no.nordicsemi.android.toolbox.profile.parser.ots.OLCPResponse
 import no.nordicsemi.android.toolbox.profile.parser.ots.OLCPResult
+import no.nordicsemi.kotlin.ble.core.exception.CocException
 import no.nordicsemi.kotlin.ble.core.util.fromShortUuid
 
 @OptIn(ExperimentalUuidApi::class)
@@ -89,9 +103,16 @@ internal class OTSManager : ServiceManager {
             refreshObjectName(deviceId)
             refreshObjectSize(deviceId)
 
-            // olcpChar.subscribe().mapNotNull {
-                //  OTSDataParser.parseOlcpResponse(it)
-            // OTSRepository.onOLCPResponse(deviceId, it)
+            oacpChar.subscribe().mapNotNull {
+                    OTSDataParser.parseOacpResponse(it)
+                }.zip(oacpOperations) { response, operation ->
+                    assert(response.request == operation.opcode)
+                    OTSRepository.onOACPResponse(deviceId, response)
+                    _oacpResponse.emit(Pair(operation, response))
+                }.catch { it.printStackTrace() }
+                .onCompletion { OTSRepository.clear(deviceId) }
+                .launchIn(scope)
+
             olcpChar.subscribe().mapNotNull{
                     OTSDataParser.parseOlcpResponse(it)
                 }.onEach { OTSRepository.onOLCPResponse(deviceId, it) }
@@ -116,24 +137,39 @@ internal class OTSManager : ServiceManager {
         private lateinit var olcpChar: RemoteCharacteristic
         private var peripheral: Peripheral<*, *>? = null
 
-        // private val _otsOp
+        private var _oacpOperations = MutableSharedFlow<OACPOperation>()
+        val oacpOperations: SharedFlow<OACPOperation> = _oacpOperations
 
-         fun openTransferChannel(deviceId: String) {
-            val pair = peripheral?.openCocChannel(OTS_COC_PSM)
-            pair?.second?.let {
-                Timber.i("Opened OTS transfer channel")
-                it.write(0xdd)
-                val test = (0..<256 * 3).toByteArray()
-                //val test = (0..<489).toByteArray()
-                it.write(test)
+        private var _oacpResponse = MutableSharedFlow<Pair<OACPOperation, OACPResponse>?>()
+        val oacpResponse: SharedFlow<Pair<OACPOperation, OACPResponse>?> = _oacpResponse
+
+        val oacpMutex = Mutex()
+
+
+        // private val _otsOp
+        suspend fun readCurrentObject(deviceId: String) {
+            if (oacpMutex.isLocked) return
+            val peripheral = peripheral ?: return
+            val currentObject = OTSRepository.getData(deviceId).firstOrNull()?.otsObject ?: return
+            val size = currentObject.size?.current ?: return
+            val op = OACPOperation.Read(0, size)
+            oacpMutex.withLock {
+                try {
+                    peripheral.openCocChannel(OTS_COC_PSM)
+                    requestOACPOperation(deviceId, op)
+                    val data = awaitOACPResponse(op)?.takeIf { it.isSuccess() }
+                        ?.let { oacpReadWorker(op) }
+                        ?.also{
+                            OTSRepository.onObjectRead(deviceId, it)
+                            Timber.i("DATA READ COMPLETE: $it")
+                        }
+                } catch (e: Exception) {
+                    Timber.e("Error reading current object: ${e.message}")
+                } finally {
+                    Timber.i("CLOSING OTS CHANNEL")
+                    peripheral.closeCocChannel(OTS_COC_PSM)
+                }
             }
-            pair?.first?.let {
-                Timber.i("Reading OTS content")
-                val msg = it.readNBytes(512 * 2)
-                Timber.d("Message size from ESP32: " + msg.size.toString())
-                Timber.d(msg.toList().map { num -> num.toInt() }.joinToString(" "))
-            }
-            Timber.d(OTSDataParser.parseOlcpResponse(byteArrayOf(0x01, 0x01)).toString())
         }
 
         private suspend fun readCharacteristic(deviceId: String, characteristic: RemoteCharacteristic, actions: (ByteArray) -> Unit) {
@@ -170,9 +206,36 @@ internal class OTSManager : ServiceManager {
             }
         }
 
+        private suspend fun awaitOACPResponse(operation: OACPOperation): OACPResponse? {
+            val resp = withTimeoutOrNull(2000) { oacpResponse.first{ it?.first == operation } }
+            return resp?.second
+        }
+
+        private suspend fun requestOACPOperation(deviceId: String, operation: OACPOperation) {
+            val data = operation.genPacket()
+            try {
+                if (::oacpChar.isInitialized) {
+                    oacpChar.write(data, WriteType.WITH_RESPONSE)
+                    _oacpOperations.emit(operation)
+                }
+            } catch (e: Exception) {
+                Timber.e("Error writing to OACP characteristic: ${e.message}")
+            }
+        }
+
+        private fun oacpReadWorker(readOperation: OACPOperation.Read): ByteArray? {
+            val peripheral = peripheral ?: return null
+            var data: ByteArray? = null
+            try {
+                data = peripheral.readFromCocChannel(OTS_COC_PSM, readOperation.length)
+            } catch (e: CocException) {
+                Timber.e("Error reading from OTS channel: ${e.message}")
+            }
+            return data
+        }
+
         suspend fun requestOLCPOperation(deviceId: String, operation: OLCPOperation) {
             val data = operation.genPacket()
-
             try {
                 if (::olcpChar.isInitialized) {
                     olcpChar.write(data, WriteType.WITH_RESPONSE)

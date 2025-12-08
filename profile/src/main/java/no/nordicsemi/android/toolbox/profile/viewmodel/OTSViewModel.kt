@@ -15,6 +15,7 @@ import no.nordicsemi.android.toolbox.profile.ProfileDestinationId
 import no.nordicsemi.android.toolbox.profile.data.OTSServiceData
 import no.nordicsemi.android.toolbox.profile.manager.repository.LBSRepository
 import no.nordicsemi.android.toolbox.profile.manager.repository.OTSRepository
+import no.nordicsemi.android.toolbox.profile.parser.ots.OACPOperation
 import no.nordicsemi.android.toolbox.profile.repository.DeviceRepository
 import javax.inject.Inject
 import kotlin.collections.component1
@@ -25,6 +26,12 @@ internal sealed interface OTSEvent {
     data class OnOLCPRequest(
         val operation: OLCPOperation
     ) : OTSEvent
+    /*
+    data class OnOACPRequest(
+        val operation: OACPOperation
+    ) : OTSEvent
+     */
+    data object ReadObject : OTSEvent
 }
 
 @HiltViewModel
@@ -72,12 +79,26 @@ internal class OTSViewModel @Inject constructor(
                 otsFeatures = it.otsFeatures,
                 otsObject = it.otsObject,
                 olcpResponse = it.olcpResponse,
+                oacpResponse = it.oacpResponse,
+                readData = it.readData,
             )
         }.launchIn(viewModelScope)
     }
 
     fun onEvent(event: OTSEvent) {
         when (event) {
+            /*
+            is OTSEvent.OnOACPRequest -> {
+                viewModelScope.launch {
+                    OTSRepository.requestOACPOperation(address, event.operation)
+                }
+            }
+             */
+            is OTSEvent.ReadObject -> {
+                viewModelScope.launch {
+                    OTSRepository.getObjectVal(address)
+                }
+            }
             is OTSEvent.OnOLCPRequest -> {
                 viewModelScope.launch {
                     OTSRepository.requestOLCPOperation(address, event.operation)

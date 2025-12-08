@@ -83,44 +83,51 @@ data class OTSObject (
     val properties: OTSObjProperties? = null,
 )
 
-enum class OACPOpcode(val op: Int){
+enum class OACPOpcode(val op: Byte){
     CREATE(0x01),
     DELETE(0x02),
     CHECKSUM(0x03),
     EXECUTE(0x04),
     READ(0x05),
     WRITE(0x06),
-    RESPONSE(0x60)
-}
-
-sealed class OACPResult {
-    data object Success : OACPResult()
-    data object UnsupportedOpcode : OACPResult()
-    data object InvalidParameter : OACPResult()
-    data object InsufficientResources : OACPResult()
-    data object InvalidObject : OACPResult()
-    data object ChannelUnavailable : OACPResult()
-    data object UnsupportedType : OACPResult()
-    data object ProcedureNotPermitted : OACPResult()
-    data object ObjectLocked : OACPResult()
-    data object OperationFailed : OACPResult()
+    RESPONSE(0x60);
 
     companion object {
-        fun toInt(): Int {
-            return when (this) {
-                Success -> 0x01
-                UnsupportedOpcode -> 0x02
-                InvalidParameter -> 0x03
-                InsufficientResources -> 0x04
-                InvalidObject -> 0x05
-                ChannelUnavailable -> 0x06
-                UnsupportedType -> 0x07
-                ProcedureNotPermitted -> 0x08
-                ObjectLocked -> 0x09
-                OperationFailed -> 0x0A
-                else -> throw IllegalArgumentException("Unknown OACPResult")
-            }
-        }
+        private val map = entries.associateBy(OACPOpcode::op)
+        fun fromByte(opcode: Byte) = map[opcode]
+        fun toByte(opcode: OACPOpcode) = opcode.op
+    }
+}
+
+enum class OACPResult(val code: Byte) {
+    SUCCESS(0x01),
+    UNSUPPORTED_OPCODE(0x02),
+    INVALID_PARAMETER(0x03),
+    INSUFFICIENT_RESOURCES(0x04),
+    INVALID_OBJECT(0x05),
+    CHANNEL_UNAVAILABLE(0x06),
+    UNSUPPORTED_TYPE(0x07),
+    PROCEDURE_NOT_PERMITTED(0x08),
+    OBJECT_LOCKED(0x09),
+    OPERATION_FAILED(0x0A);
+
+    companion object {
+        private val map = OACPResult.entries.associateBy(OACPResult::code)
+        fun fromByte(code: Byte) = map[code]
+        fun toByte(result: OACPResult): Byte = result.code
+    }
+}
+
+data class OACPResponse (
+    val request: OACPOpcode? = null,
+    val result: OACPResult? = null,
+) {
+    override fun toString(): String {
+        return "Request = $request, Result = $result"
+    }
+
+    fun isSuccess(): Boolean {
+        return result == OACPResult.SUCCESS
     }
 }
 

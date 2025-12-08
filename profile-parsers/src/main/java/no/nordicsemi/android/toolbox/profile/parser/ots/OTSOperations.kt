@@ -86,3 +86,50 @@ sealed class OLCPResult(
         fun fromInt(op: Int): OLCPResult = fromByte(op.toByte())
     }
 }
+
+sealed class OACPOperation (
+    val opcode: OACPOpcode
+) {
+    open fun genPacket(): ByteArray = byteArrayOf(opcode.op)
+    open fun getPacketSize(): Int = 1
+    /*
+    fun toString(): String {
+        return this::class.simpleName
+    }
+    */
+    override fun toString(): String {
+        return this::class.simpleName?: "Unknown"
+    }
+
+    data class Read(
+        val offset: Int,
+        val length: Int,
+    ): OACPOperation(OACPOpcode.READ) {
+        override fun genPacket(): ByteArray {
+            return byteArrayOf(opcode.op) + offset.toUInt32Array() + length.toUInt32Array()
+        }
+        override fun getPacketSize(): Int = 9
+    }
+}
+
+sealed class COCState {
+    data object Open : COCState()
+    data object Closed : COCState()
+    data object Receiving : COCState()
+    data object Writing : COCState()
+}
+
+sealed class COCStatus {
+    data object Completed : COCStatus()
+    data object Pending : COCStatus()
+    data object Failed : COCStatus()
+}
+
+fun Int.toUInt32Array(): ByteArray {
+    return byteArrayOf(
+        (this and 0xFF).toByte(),
+        ((this shr 8) and 0xFF).toByte(),
+        ((this shr 16) and 0xFF).toByte(),
+        ((this shr 24) and 0xFF).toByte()
+    )
+}
