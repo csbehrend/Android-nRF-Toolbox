@@ -41,6 +41,10 @@ object OTSRepository {
         OTSManager.readCurrentObject(deviceId)
     }
 
+    suspend fun writeRange(deviceId: String) {
+        OTSManager.writeRange(deviceId)
+    }
+
     suspend fun requestOLCPOperation(deviceId: String, operation: OLCPOperation) {
         OTSManager.requestOLCPOperation(deviceId, operation)
     }

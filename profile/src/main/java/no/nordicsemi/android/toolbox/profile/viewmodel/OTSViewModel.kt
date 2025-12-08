@@ -32,6 +32,7 @@ internal sealed interface OTSEvent {
     ) : OTSEvent
      */
     data object ReadObject : OTSEvent
+    data object WriteRange : OTSEvent
 }
 
 @HiltViewModel
@@ -97,6 +98,11 @@ internal class OTSViewModel @Inject constructor(
             is OTSEvent.ReadObject -> {
                 viewModelScope.launch {
                     OTSRepository.getObjectVal(address)
+                }
+            }
+            is OTSEvent.WriteRange -> {
+                viewModelScope.launch {
+                    OTSRepository.writeRange(address)
                 }
             }
             is OTSEvent.OnOLCPRequest -> {

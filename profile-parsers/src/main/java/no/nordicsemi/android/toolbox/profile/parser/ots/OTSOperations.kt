@@ -110,6 +110,17 @@ sealed class OACPOperation (
         }
         override fun getPacketSize(): Int = 9
     }
+    data class Write(
+        val offset: Int,
+        val length: Int,
+        val truncate: Boolean
+    ): OACPOperation(OACPOpcode.WRITE) {
+        override fun genPacket(): ByteArray {
+            val truncateByte: Byte = if (truncate) 0x02 else 0x00
+            return byteArrayOf(opcode.op) + offset.toUInt32Array() + length.toUInt32Array() + byteArrayOf(truncateByte)
+        }
+        override fun getPacketSize(): Int = 10
+    }
 }
 
 sealed class COCState {

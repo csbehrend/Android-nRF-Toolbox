@@ -172,6 +172,31 @@ internal class OTSManager : ServiceManager {
             }
         }
 
+        suspend fun writeRange(deviceId: String) {
+            if (oacpMutex.isLocked) return
+            val peripheral = peripheral ?: return
+            val currentObject = OTSRepository.getData(deviceId).firstOrNull()?.otsObject ?: return
+            val size = currentObject.size?.allocated ?: return
+            val op = OACPOperation.Write(0, size, true)
+            val payload: ByteArray = (0..<size).toByteArray()
+            oacpMutex.withLock {
+                try {
+                    peripheral.openCocChannel(OTS_COC_PSM)
+                    requestOACPOperation(deviceId, op)
+                    val complete = awaitOACPResponse(op)?.takeIf { it.isSuccess() }
+                        ?.let { oacpWriteWorker(op, payload) }
+                        ?.also{
+                            Timber.i("DATA WRITE COMPLETE: $it")
+                        }
+                } catch (e: Exception) {
+                    Timber.e("Error reading current object: ${e.message}")
+                } finally {
+                    Timber.i("CLOSING OTS CHANNEL")
+                    peripheral.closeCocChannel(OTS_COC_PSM)
+                }
+            }
+        }
+
         private suspend fun readCharacteristic(deviceId: String, characteristic: RemoteCharacteristic, actions: (ByteArray) -> Unit) {
             characteristic.let { c ->
                 // If the characteristic supports READ, read the initial value
@@ -232,6 +257,18 @@ internal class OTSManager : ServiceManager {
                 Timber.e("Error reading from OTS channel: ${e.message}")
             }
             return data
+        }
+
+        private fun oacpWriteWorker(writeOperation: OACPOperation.Write, payload: ByteArray): Boolean {
+            val peripheral = peripheral ?: return false
+            assert (payload.size == writeOperation.length)
+            try {
+                peripheral.writeToCocChannel(OTS_COC_PSM, payload)
+            } catch (e: CocException) {
+                Timber.e("Error reading from OTS channel: ${e.message}")
+                return false
+            }
+            return true
         }
 
         suspend fun requestOLCPOperation(deviceId: String, operation: OLCPOperation) {

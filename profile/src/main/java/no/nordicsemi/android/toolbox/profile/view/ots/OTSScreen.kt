@@ -55,7 +55,12 @@ internal fun OTSScreen() {
             prevClickEvent = { onClickEvent(OTSEvent.OnOLCPRequest(OLCPOperation.Previous)) },
             nextClickEvent = { onClickEvent(OTSEvent.OnOLCPRequest(OLCPOperation.Next)) },
         )
-        OACPView(otsServiceData.oacpResponse, otsServiceData.readData) { onClickEvent(OTSEvent.ReadObject) }
+        OACPView(
+            response = otsServiceData.oacpResponse,
+            data = otsServiceData.readData,
+            readClickEvent = { onClickEvent(OTSEvent.ReadObject) },
+            writeRangeClickEvent = { onClickEvent(OTSEvent.WriteRange) }
+        )
     }
 }
 
@@ -258,6 +263,7 @@ private fun OACPView(
     response: OACPResponse,
     data: String,
     readClickEvent: () -> Unit,
+    writeRangeClickEvent: () -> Unit,
 ) {
     val textColor = MaterialTheme.colorScheme.onSurface
     OutlinedCard {
@@ -290,6 +296,9 @@ private fun OACPView(
                 Button(onClick = readClickEvent) {
                     Text(text = "Read Object")
                 }
+                Button(onClick = writeRangeClickEvent) {
+                    Text(text = "Write Object Range")
+                }
             }
             Row(
                 modifier = Modifier
@@ -299,6 +308,17 @@ private fun OACPView(
             ) {
                 Text(
                     text = "Response: $response",
+                    color = textColor,
+                )
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Data Length: ${data.length / 2}",
                     color = textColor,
                 )
             }
