@@ -28,6 +28,12 @@ import kotlin.uuid.toKotlinUuid
 private val AUTO_START_CHARACTERISTIC_UUID = UUID.fromString("3861a947-7b94-495b-ae3d-c2d669d9f168").toKotlinUuid()
 
 @OptIn(ExperimentalUuidApi::class)
+private val AUTO_PAUSE_CHARACTERISTIC_UUID = UUID.fromString("f9b94111-c76a-42a3-92a8-8609cfd2c28f").toKotlinUuid()
+
+@OptIn(ExperimentalUuidApi::class)
+private val AUTO_STOP_CHARACTERISTIC_UUID = UUID.fromString("ca11594c-0a4d-40dc-994c-b64e2b556e74").toKotlinUuid()
+
+@OptIn(ExperimentalUuidApi::class)
 private val AUTO_EVENT_CHARACTERISTIC_UUID = UUID.fromString("c045a031-c506-4756-8bdd-63d55ef3eced").toKotlinUuid()
 
 internal class GCIManager: ServiceManager {
@@ -43,6 +49,12 @@ internal class GCIManager: ServiceManager {
             startChar = remoteService.characteristics.firstOrNull {
                 it.uuid == AUTO_START_CHARACTERISTIC_UUID
             } ?: throw IllegalStateException("Automation Start characteristic not found")
+            pauseChar = remoteService.characteristics.firstOrNull {
+                it.uuid == AUTO_PAUSE_CHARACTERISTIC_UUID
+            } ?: throw IllegalStateException("Automation STOP characteristic not found")
+            stopChar = remoteService.characteristics.firstOrNull {
+                it.uuid == AUTO_STOP_CHARACTERISTIC_UUID
+            } ?: throw IllegalStateException("Automation STOP characteristic not found")
             eventChar = remoteService.characteristics.firstOrNull {
                 it.uuid == AUTO_EVENT_CHARACTERISTIC_UUID
             } ?: throw IllegalStateException("Automation Event characteristic not found")
@@ -54,9 +66,9 @@ internal class GCIManager: ServiceManager {
                 GCIDataParser.parseEvent(it)
             }.onEach {
                 GCIRepository.updateGloveEvent(deviceId, it)
-                if (it is GCIEvent.ActivityStarted) {
+                if (it is GCIEvent.ActivityStarted || it is GCIEvent.ActivityCompleted || it is GCIEvent.ActivityCanceled) {
                     GCIRepository.resetRepCount(deviceId)
-                } else if (it is GCIEvent.RepCompleted || it is GCIEvent.ActivityCompleted)  {
+                } else if (it is GCIEvent.RepCompleted)  {
                     GCIRepository.incrementRepCount(deviceId)
                 }
             }.catch { it.printStackTrace() }
@@ -68,6 +80,8 @@ internal class GCIManager: ServiceManager {
 
     companion object {
         private lateinit var startChar: RemoteCharacteristic
+        private lateinit var pauseChar: RemoteCharacteristic
+        private lateinit var stopChar: RemoteCharacteristic
         private lateinit var eventChar: RemoteCharacteristic
 
         private suspend fun readCharacteristic(deviceId: String, characteristic: RemoteCharacteristic, actions: (ByteArray) -> Unit) {
@@ -89,6 +103,26 @@ internal class GCIManager: ServiceManager {
             try {
                 if (::startChar.isInitialized) {
                     startChar.write(data, WriteType.WITH_RESPONSE)
+                }
+            } catch (e: Exception) {
+                Timber.e("Error writing to OLCP characteristic: ${e.message}")
+            }
+        }
+
+        suspend fun requestPause(deviceId: String) {
+            try {
+                if (::pauseChar.isInitialized) {
+                    pauseChar.write(byteArrayOf(1), WriteType.WITH_RESPONSE)
+                }
+            } catch (e: Exception) {
+                Timber.e("Error writing to OLCP characteristic: ${e.message}")
+            }
+        }
+
+        suspend fun requestStop(deviceId: String) {
+            try {
+                if (::stopChar.isInitialized) {
+                    stopChar.write(byteArrayOf(1), WriteType.WITH_RESPONSE)
                 }
             } catch (e: Exception) {
                 Timber.e("Error writing to OLCP characteristic: ${e.message}")

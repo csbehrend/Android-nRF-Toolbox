@@ -24,6 +24,14 @@ object GCIRepository {
         GCIManager.requestStart(deviceId, exerciseId)
     }
 
+    suspend fun pauseExercise(deviceId: String) {
+        GCIManager.requestPause(deviceId)
+    }
+
+    suspend fun stopExercise(deviceId: String) {
+        GCIManager.requestStop(deviceId)
+    }
+
     fun updateGloveEvent(deviceId: String, event: GCIEvent) {
         _dataMap[deviceId]?.update { it.copy(gciEvent = event) }
     }

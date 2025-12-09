@@ -46,6 +46,8 @@ internal fun GCIScreen() {
             eventName = gciServiceData.gciEvent::class.simpleName ?: "N/A",
             repCount = gciServiceData.repCount,
             startClickEvent = { onClickEvent(GCIEvent.StartExercise(1)) },
+            pauseClickEvent = { onClickEvent(GCIEvent.PauseExercise) },
+            stopClickEvent = { onClickEvent(GCIEvent.StopExercise) },
         )
     }
 }
@@ -55,6 +57,8 @@ private fun GCIView(
     eventName: String,
     repCount: Int,
     startClickEvent: () -> Unit,
+    pauseClickEvent: () -> Unit,
+    stopClickEvent: () -> Unit,
 ) {
     val textColor = MaterialTheme.colorScheme.onSurface
     OutlinedCard {
@@ -86,6 +90,26 @@ private fun GCIView(
             ) {
                 Button(onClick = startClickEvent) {
                     Text(text = "Start Exercise")
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Button(onClick = pauseClickEvent) {
+                    Text(text = "Pause Exercise")
+                }
+            }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Button(onClick = stopClickEvent) {
+                    Text(text = "Stop Exercise")
                 }
             }
             Row(

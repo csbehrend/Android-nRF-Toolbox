@@ -27,6 +27,8 @@ internal sealed interface GCIEvent {
     data class StartExercise(
         val id: Int
     ) : GCIEvent
+    data object PauseExercise : GCIEvent
+    data object StopExercise : GCIEvent
 }
 
 @HiltViewModel
@@ -82,6 +84,16 @@ internal class GCIViewModel @Inject constructor(
             is GCIEvent.StartExercise -> {
                 viewModelScope.launch {
                     GCIRepository.startExercise(address,event.id)
+                }
+            }
+            is GCIEvent.PauseExercise -> {
+                viewModelScope.launch {
+                    GCIRepository.pauseExercise(address)
+                }
+            }
+            is GCIEvent.StopExercise -> {
+                viewModelScope.launch {
+                    GCIRepository.stopExercise(address)
                 }
             }
         }
